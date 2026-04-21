@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JetComputer · Dashboard de Valoración ITAD</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --panel: #121b2f;
+      --panel-2: #18233b;
+      --text: #ebf0ff;
+      --muted: #9fb0d1;
+      --line: #283656;
+      --accent: #4da3ff;
+      --accent-2: #65d6ad;
+      --warn: #ffb020;
+      --danger: #ff6b6b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, Segoe UI, Roboto, Arial, sans-serif;
+      background: linear-gradient(180deg, #09101d 0%, #0d1628 100%);
+      color: var(--text);
+    }
+    .wrap {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .hero {
+      display: grid;
+      grid-template-columns: 1.3fr .9fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .card {
+      background: rgba(18, 27, 47, .9);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.18);
+    }
+    h1, h2, h3 { margin: 0 0 10px; }
+    h1 { font-size: 30px; }
+    h2 { font-size: 20px; }
+    h3 { font-size: 15px; color: var(--muted); font-weight: 600; }
+    p, li { color: var(--muted); line-height: 1.45; }
+    textarea, input, select, button {
+      font: inherit;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+    }
+    textarea, input, select {
+      width: 100%;
+      background: #0e1628;
+      color: var(--text);
+      padding: 12px 14px;
+    }
+    textarea { min-height: 200px; resize: vertical; }
+    button {
+      background: linear-gradient(135deg, var(--accent), #2b7de0);
+      color: white;
+      padding: 12px 16px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    button.secondary { background: #16233f; }
+    button.good { background: linear-gradient(135deg, var(--accent-2), #36a57c); }
+    .row {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 14px;
+    }
+    .col-3 { grid-column: span 3; }
+    .col-4 { grid-column: span 4; }
+    .col-6 { grid-column: span 6; }
+    .col-8 { grid-column: span 8; }
+    .col-12 { grid-column: span 12; }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 14px;
+      margin: 18px 0;
+    }
+    .metric {
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+    }
+    .metric .v {
+      font-size: 28px;
+      font-weight: 800;
+      margin-top: 6px;
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    .hint {
+      background: rgba(77, 163, 255, .08);
+      border: 1px solid rgba(77, 163, 255, .25);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 13px;
+      color: #cfe4ff;
+    }
+    .table-wrap {
+      overflow: auto;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      margin-top: 14px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1450px;
+      background: #0e1628;
+    }
+    thead th {
+      position: sticky;
+      top: 0;
+      background: #15233f;
+      color: #d9e6ff;
+      text-align: left;
+      padding: 12px;
+      font-size: 13px;
+      border-bottom: 1px solid var(--line);
+    }
+    tbody td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #1d2a46;
+      vertical-align: top;
+      font-size: 13px;
+      color: #e7edff;
+    }
+    tbody tr:hover { background: rgba(255,255,255,.02); }
+    .badge {
+      display: inline-block;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 12px;
+    }
+    .A { background: rgba(101,214,173,.15); color: #95ffd3; }
+    .Am { background: rgba(101,214,173,.1); color: #b9ffe7; }
+    .Bp { background: rgba(77,163,255,.15); color: #9fd0ff; }
+    .Bm { background: rgba(255,176,32,.15); color: #ffd58a; }
+    .C { background: rgba(255,107,107,.16); color: #ffc0c0; }
+    .D { background: rgba(255,107,107,.25); color: #ffd0d0; }
+    .pill {
+      display: inline-block;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      font-size: 12px;
+      color: var(--muted);
+      margin: 4px 6px 0 0;
+    }
+    .footer-note { font-size: 12px; color: var(--muted); margin-top: 12px; }
+    @media (max-width: 1100px) {
+      .hero, .metrics { grid-template-columns: 1fr; }
+      .col-3, .col-4, .col-6, .col-8, .col-12 { grid-column: span 12; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <div class="card">
+        <h1>Dashboard de valoración ITAD · JetComputer</h1>
+        <p>
+          Sube tu Excel de auditoría y el sistema aplicará una valoración inicial por línea, asignará grado,
+          calculará descuentos, precio de compra recomendado, precio de venta orientativo y margen estimado.
+        </p>
+        <div class="hint">
+          Esta versión funciona 100% en navegador y es válida para GitHub Pages. No consulta internet ni OpenAI por sí sola.
+          Para precios de mercado reales y automáticos tendrás que conectar una API o backend.
+        </div>
+        <div class="actions">
+          <input type="file" id="excelFile" accept=".xlsx,.xls,.csv" />
+          <button id="analyzeBtn">Analizar Excel</button>
+          <button class="secondary" id="downloadBtn">Descargar resultados CSV</button>
+          <button class="good" id="sampleBtn">Cargar ejemplo</button>
+        </div>
+        <p class="footer-note">
+          Recomendación técnica: si luego quieres una versión profesional completa, conviene separar el proyecto en
+          <strong>frontend</strong> (dashboard) + <strong>backend</strong> (motor de reglas, scraping, API de IA y base de datos).
+        </p>
+      </div>
+      <div class="card">
+        <h2>Prompt base integrado</h2>
+        <textarea id="promptBox">Actúa como un analista senior especializado en valoración de equipos informáticos usados y reacondicionados para compra profesional, con experiencia en el mercado de segunda mano, reacondicionado e ITAD.
+
+Vas a analizar un archivo Excel de auditoría informática de JetComputer, empresa especializada en el reacondicionado de equipos informáticos. El objetivo es determinar, línea por línea, el valor real de mercado de cada máquina, el precio máximo de compra recomendado, el precio de venta orientativo y el margen estimado de reventa, teniendo en cuenta tanto sus características técnicas como su estado real.
+
+La valoración debe orientarse a compra profesional con margen comercial, no a valoración final para particular.
+
+Debes devolver para cada línea: referencia, producto, modelo identificado, configuración, estado detectado, grado, precio de mercado estimado, descuento aplicado, precio de compra recomendado, precio de venta orientativo, margen estimado y observaciones.</textarea>
+      </div>
+    </div>
+
+    <div class="metrics">
+      <div class="metric"><h3>Líneas analizadas</h3><div class="v" id="mRows">0</div></div>
+      <div class="metric"><h3>Compra recomendada total</h3><div class="v" id="mBuy">0 €</div></div>
+      <div class="metric"><h3>Venta orientativa total</h3><div class="v" id="mSell">0 €</div></div>
+      <div class="metric"><h3>Margen estimado total</h3><div class="v" id="mMargin">0 €</div></div>
+      <div class="metric"><h3>Ticket medio margen</h3><div class="v" id="mAvg">0 €</div></div>
+    </div>
+
+    <div class="row">
+      <div class="col-8 card">
+        <h2>Resultados</h2>
+        <div id="gradeSummary"></div>
+        <div class="table-wrap">
+          <table id="resultsTable">
+            <thead>
+              <tr>
+                <th>Línea</th>
+                <th>Referencia</th>
+                <th>Descripción</th>
+                <th>Modelo identificado</th>
+                <th>Configuración</th>
+                <th>Estado detectado</th>
+                <th>Grado</th>
+                <th>Mercado</th>
+                <th>Descuento</th>
+                <th>Compra</th>
+                <th>Venta</th>
+                <th>Margen</th>
+                <th>Observaciones</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="col-4 card">
+        <h2>Reglas aplicadas</h2>
+        <p>El motor actual aplica reglas configurables a partir del contenido del Excel:</p>
+        <ul>
+          <li>Grado A si no hay defectos.</li>
+          <li>Pantalla: penalización entre 30 € y 75 €.</li>
+          <li>Batería &lt; 80%: penalización moderada o alta.</li>
+          <li>Teclado, touchpad y cargador: descuentos específicos.</li>
+          <li>Falta de RAM o SSD: penalización alta.</li>
+          <li>Daños acumulados: rebaja extra de seguridad.</li>
+          <li>Precio de compra recomendado como porcentaje del valor de mercado, ajustado por estado.</li>
+        </ul>
+        <h2>Columnas que intenta detectar</h2>
+        <p>
+          Referencia, descripción, marca, modelo, procesador, RAM, disco/SSD, GPU, pantalla, batería, estado,
+          observaciones, cargador, teclado, touchpad.
+        </p>
+        <div class="hint">
+          Si tu Excel tiene nombres distintos de columnas, el sistema intenta reconocerlos por similitud.
+          Aun así, conviene estandarizar encabezados para obtener mejores resultados.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      rawRows: [],
+      results: []
+    };
+
+    const synonyms = {
+      reference: ["referencia", "ref", "linea", "línea", "id", "codigo", "código"],
+      description: ["descripcion", "descripción", "producto", "nombre", "equipo", "item"],
+      brand: ["marca", "manufacturer", "fabricante"],
+      model: ["modelo", "model"],
+      cpu: ["procesador", "cpu", "micro", "processor"],
+      ram: ["ram", "memoria", "memory"],
+      storage: ["disco", "ssd", "hdd", "almacenamiento", "storage", "nvme"],
+      gpu: ["grafica", "gráfica", "gpu", "video"],
+      screen: ["pantalla", "screen", "display", "lcd"],
+      battery: ["bateria", "batería", "battery", "battery health"],
+      charger: ["cargador", "charger", "adaptador"],
+      keyboard: ["teclado", "keyboard"],
+      touchpad: ["touchpad", "trackpad"],
+      condition: ["estado", "condition", "grado", "grade", "aesthetic", "cosmetico", "cosmético"],
+      notes: ["observaciones", "obs", "comentarios", "notas", "notas tecnicas", "defectos"]
+    };
+
+    function normalizeText(v) {
+      return String(v ?? "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim();
+    }
+
+    function eur(n) {
+      return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(Number(n || 0));
+    }
+
+    function mapColumns(headers) {
+      const map = {};
+      const normalizedHeaders = headers.map(h => ({ raw: h, n: normalizeText(h) }));
+      for (const key of Object.keys(synonyms)) {
+        let found = normalizedHeaders.find(h => synonyms[key].some(s => h.n.includes(normalizeText(s))));
+        map[key] = found ? found.raw : null;
+      }
+      return map;
+    }
+
+    function getVal(row, map, key) {
+      return map[key] ? row[map[key]] : "";
+    }
+
+    function textJoin(...values) {
+      return values.filter(Boolean).map(v => String(v)).join(' | ');
+    }
+
+    function parseNumber(text) {
+      const cleaned = String(text ?? '')
+        .replace(/,/g, '.')
+        .replace(/[^0-9.]/g, ' ')
+        .trim();
+      const first = cleaned.match(/\d+(?:\.\d+)?/);
+      return first ? Number(first[0]) : null;
+    }
+
+    function extractSpec(text, regexes) {
+      const t = String(text || '');
+      for (const r of regexes) {
+        const m = t.match(r);
+        if (m) return m[1] || m[0];
+      }
+      return '';
+    }
+
+    function inferBrand(text) {
+      const brands = ['hp','dell','lenovo','apple','asus','acer','toshiba','fujitsu','msi','microsoft'];
+      const n = normalizeText(text);
+      const found = brands.find(b => n.includes(b));
+      return found ? found.toUpperCase() : '';
+    }
+
+    function estimateBaseMarket(rowText) {
+      const t = normalizeText(rowText);
+      let value = 180;
+
+      if (/i3-?10|i3-?11|ryzen 3 4|ryzen 3 5/.test(t)) value = 220;
+      if (/i5-?8|i5-?9|ryzen 5 3/.test(t)) value = 260;
+      if (/i5-?10|i5-?11|i5-?12|ryzen 5 4|ryzen 5 5/.test(t)) value = 360;
+      if (/i7-?8|i7-?9/.test(t)) value = 340;
+      if (/i7-?10|i7-?11|i7-?12|ryzen 7 4|ryzen 7 5/.test(t)) value = 480;
+      if (/m1|m2/.test(t)) value = 700;
+      if (/xeon|workstation|zbook|precision/.test(t)) value += 120;
+      if (/mini|dm|micro|usff/.test(t)) value -= 20;
+      if (/tower|sff|desktop|prodesk|elitedesk|optiplex/.test(t)) value += 40;
+      if (/thinkpad|latitude|elitebook|probook/.test(t)) value += 60;
+      if (/gaming|rtx|gtx/.test(t)) value += 150;
+
+      const ram = extractSpec(t, [/([0-9]{1,3})\s?gb\s?(?:ram|ddr|memory)?/i]);
+      const storage = extractSpec(t, [/([0-9]{3,4})\s?gb\s?(?:ssd|hdd|nvme)/i, /(1)\s?tb/i, /(2)\s?tb/i]);
+      const screen = extractSpec(t, [/([1-2][0-9](?:\.[0-9])?)\s?(?:"|pulgadas|inch)/i]);
+
+      const ramNum = parseNumber(ram);
+      if (ramNum >= 16) value += 40;
+      if (ramNum >= 32) value += 70;
+
+      if (String(storage).includes('1') && normalizeText(storage).includes('tb')) value += 70;
+      else {
+        const storageNum = parseNumber(storage);
+        if (storageNum >= 512) value += 40;
+        if (storageNum >= 1000) value += 70;
+      }
+
+      const screenNum = parseNumber(screen);
+      if (screenNum >= 15) value += 20;
+      if (screenNum >= 17) value += 40;
+
+      return Math.max(90, value);
+    }
+
+    function detectIssues(combined) {
+      const t = normalizeText(combined);
+      const issues = [];
+      let discount = 0;
+
+      const add = (label, amount) => {
+        issues.push(`${label}: -${amount} €`);
+        discount += amount;
+      };
+
+      const batteryPctMatch = t.match(/bateria[^0-9]{0,15}(\d{1,3})\s?%|battery[^0-9]{0,15}(\d{1,3})\s?%/i);
+      const batteryPct = batteryPctMatch ? Number(batteryPctMatch[1] || batteryPctMatch[2]) : null;
+
+      if (/pantalla.*cambiar|lcd.*cambiar|screen.*replace|display.*replace|pantalla rota/.test(t)) add('Pantalla para sustituir', 75);
+      else if (/pixeles muertos|pixel muerto|manchas pantalla|screen spots|white spots|ghosting/.test(t)) add('Pantalla con defectos visibles', 55);
+      else if (/pantalla rayada|arañazos pantalla|screen scratch/.test(t)) add('Pantalla con desgaste estético', 35);
+
+      if (batteryPct !== null) {
+        if (batteryPct < 70) add(`Batería al ${batteryPct}%`, 45);
+        else if (batteryPct < 80) add(`Batería al ${batteryPct}%`, 25);
+      }
+      if (/bateria mala|battery bad|battery fail|sin bateria|no battery/.test(t)) add('Batería defectuosa o ausente', 50);
+
+      if (/falta cargador|sin cargador|no charger/.test(t)) add('Falta de cargador', 20);
+      if (/teclado.*falla|keyboard.*fail|faltan teclas|teclas rotas/.test(t)) add('Teclado defectuoso', 35);
+      else if (/teclado desgastado|keyboard worn/.test(t)) add('Teclado desgastado', 15);
+
+      if (/touchpad.*falla|trackpad.*fail/.test(t)) add('Touchpad defectuoso', 30);
+      else if (/touchpad desgastado|trackpad worn/.test(t)) add('Touchpad desgastado', 12);
+
+      if (/sin ssd|sin disco|no ssd|no hdd|falta disco/.test(t)) add('Falta almacenamiento', 35);
+      if (/sin ram|falta ram|no ram|memory missing/.test(t)) add('Falta memoria RAM', 25);
+      if (/bisagra rota|hinge broken/.test(t)) add('Bisagra dañada', 30);
+      if (/carcasa rota|tapa rota|golpe fuerte|chasis roto/.test(t)) add('Daño estructural', 35);
+      else if (/rayado|desgaste fuerte|golpes|marcas visibles/.test(t)) add('Desgaste estético relevante', 18);
+      if (/puerto dañado|usb roto|hdmi roto/.test(t)) add('Puertos dañados', 18);
+      if (/webcam.*falla|camara.*falla/.test(t)) add('Webcam defectuosa', 15);
+
+      if (issues.length >= 3) add('Ajuste global por acumulación de defectos', 15);
+
+      return { issues, discount };
+    }
+
+    function assignGrade(discount, combined) {
+      const t = normalizeText(combined);
+      if (discount === 0) return 'A';
+      if (discount <= 15) return 'A-';
+      if (discount <= 35) return 'B+';
+      if (discount <= 60) return 'B-';
+      if (discount <= 95) return 'C';
+      if (/rota|broken|no enciende|placa|averia grave|grave/.test(t)) return 'D';
+      return 'D';
+    }
+
+    function buyRateFromGrade(grade) {
+      return ({ 'A': 0.58, 'A-': 0.54, 'B+': 0.50, 'B-': 0.44, 'C': 0.36, 'D': 0.25 })[grade] || 0.45;
+    }
+
+    function gradeBadge(grade) {
+      const cls = ({ 'A': 'A', 'A-': 'Am', 'B+': 'Bp', 'B-': 'Bm', 'C': 'C', 'D': 'D' })[grade] || 'Bp';
+      return `<span class="badge ${cls}">${grade}</span>`;
+    }
+
+    function analyzeRows(rows) {
+      if (!rows.length) return [];
+      const headers = Object.keys(rows[0]);
+      const map = mapColumns(headers);
+
+      return rows.map((row, index) => {
+        const ref = getVal(row, map, 'reference') || (index + 1);
+        const desc = getVal(row, map, 'description') || JSON.stringify(row);
+        const brand = getVal(row, map, 'brand') || inferBrand(desc);
+        const model = getVal(row, map, 'model') || extractSpec(desc, [/(elitebook\s?[0-9a-z]+)/i, /(probook\s?[0-9a-z]+)/i, /(prodesk\s?[0-9a-z]+)/i, /(elitedesk\s?[0-9a-z]+)/i, /(latitude\s?[0-9a-z]+)/i, /(thinkpad\s?[a-z0-9\-]+)/i, /(optiplex\s?[0-9a-z]+)/i, /(macbook\s?[a-z ]+)/i]);
+        const cpu = getVal(row, map, 'cpu') || extractSpec(desc, [/((?:intel\s)?i[3579][- ]?[0-9]{4,5}[a-z]*)/i, /((?:ryzen\s?[3579]\s?[0-9]{3,4}[a-z]*))/i, /(m[123]\s?(?:pro|max)?)/i]);
+        const ram = getVal(row, map, 'ram') || extractSpec(desc, [/([0-9]{1,3}\s?gb\s?(?:ram|ddr[345]?))/i, /([0-9]{1,3}\s?gb)/i]);
+        const storage = getVal(row, map, 'storage') || extractSpec(desc, [/([0-9]{3,4}\s?gb\s?(?:ssd|hdd|nvme))/i, /([12]\s?tb\s?(?:ssd|hdd|nvme)?)/i]);
+        const gpu = getVal(row, map, 'gpu') || extractSpec(desc, [/(rtx\s?[0-9]{3,4})/i, /(gtx\s?[0-9]{3,4})/i, /(intel uhd [0-9]{3})/i, /(iris xe)/i]);
+        const screen = getVal(row, map, 'screen') || extractSpec(desc, [/([1-2][0-9](?:\.[0-9])?\s?(?:"|pulgadas|inch))/i, /(fhd|full hd|hd)/i]);
+        const condition = textJoin(getVal(row, map, 'condition'), getVal(row, map, 'notes'), getVal(row, map, 'battery'), getVal(row, map, 'charger'), getVal(row, map, 'keyboard'), getVal(row, map, 'touchpad'));
+        const combined = textJoin(desc, brand, model, cpu, ram, storage, gpu, screen, condition);
+
+        const market = estimateBaseMarket(combined);
+        const issueData = detectIssues(combined);
+        const grade = assignGrade(issueData.discount, combined);
+        const buyRate = buyRateFromGrade(grade);
+        const recommendedBuy = Math.max(20, Math.round((market * buyRate) - issueData.discount));
+        const sale = Math.max(recommendedBuy + 30, Math.round(market - Math.min(issueData.discount * 0.3, 40)));
+        const margin = Math.round(sale - recommendedBuy);
+
+        return {
+          linea: index + 1,
+          referencia: ref,
+          descripcion: desc,
+          modelo: [brand, model].filter(Boolean).join(' ').trim() || 'Modelo no identificado con precisión',
+          configuracion: [cpu, ram, storage, gpu, screen].filter(Boolean).join(' / ') || 'Configuración estimada desde descripción',
+          estado: condition || 'Sin defectos indicados en Excel',
+          grado: grade,
+          mercado: market,
+          descuento: issueData.discount,
+          compra: recommendedBuy,
+          venta: sale,
+          margen: margin,
+          observaciones: issueData.issues.length
+            ? issueData.issues.join('; ')
+            : 'Sin penalizaciones detectadas. Se asume equipo en estado correcto según Excel.'
+        };
+      });
+    }
+
+    function renderSummary(results) {
+      const totalRows = results.length;
+      const totalBuy = results.reduce((a, b) => a + b.compra, 0);
+      const totalSell = results.reduce((a, b) => a + b.venta, 0);
+      const totalMargin = results.reduce((a, b) => a + b.margen, 0);
+      const avgMargin = totalRows ? Math.round(totalMargin / totalRows) : 0;
+
+      document.getElementById('mRows').textContent = totalRows;
+      document.getElementById('mBuy').textContent = eur(totalBuy);
+      document.getElementById('mSell').textContent = eur(totalSell);
+      document.getElementById('mMargin').textContent = eur(totalMargin);
+      document.getElementById('mAvg').textContent = eur(avgMargin);
+
+      const counts = results.reduce((acc, item) => {
+        acc[item.grado] = (acc[item.grado] || 0) + 1;
+        return acc;
+      }, {});
+      document.getElementById('gradeSummary').innerHTML = ['A','A-','B+','B-','C','D']
+        .map(g => `<span class="pill">${g}: ${counts[g] || 0}</span>`)
+        .join(' ');
+    }
+
+    function renderTable(results) {
+      const tbody = document.querySelector('#resultsTable tbody');
+      tbody.innerHTML = results.map(r => `
+        <tr>
+          <td>${r.linea}</td>
+          <td>${r.referencia}</td>
+          <td>${escapeHtml(r.descripcion)}</td>
+          <td>${escapeHtml(r.modelo)}</td>
+          <td>${escapeHtml(r.configuracion)}</td>
+          <td>${escapeHtml(r.estado)}</td>
+          <td>${gradeBadge(r.grado)}</td>
+          <td>${eur(r.mercado)}</td>
+          <td>${eur(r.descuento)}</td>
+          <td>${eur(r.compra)}</td>
+          <td>${eur(r.venta)}</td>
+          <td>${eur(r.margen)}</td>
+          <td>${escapeHtml(r.observaciones)}</td>
+        </tr>
+      `).join('');
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function downloadCSV(results) {
+      if (!results.length) return alert('Primero analiza un Excel.');
+      const headers = Object.keys(results[0]);
+      const lines = [headers.join(';')].concat(
+        results.map(r => headers.map(h => `"${String(r[h]).replace(/"/g, '""')}"`).join(';'))
+      );
+      const blob = new Blob(["\ufeff" + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'jetcomputer_resultados_valoracion.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function loadWorkbook(file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: '' });
+        state.rawRows = rows;
+        state.results = analyzeRows(rows);
+        renderSummary(state.results);
+        renderTable(state.results);
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    document.getElementById('analyzeBtn').addEventListener('click', () => {
+      const file = document.getElementById('excelFile').files[0];
+      if (!file) return alert('Selecciona un Excel o CSV primero.');
+      loadWorkbook(file);
+    });
+
+    document.getElementById('downloadBtn').addEventListener('click', () => downloadCSV(state.results));
+
+    document.getElementById('sampleBtn').addEventListener('click', () => {
+      const demo = [
+        {
+          Referencia: 'JC-001',
+          Descripcion: 'HP EliteBook 840 G6 Intel i5-8365U 16GB RAM 512GB SSD 14" FHD',
+          Estado: 'Equipo correcto, bateria 84%, con cargador'
+        },
+        {
+          Referencia: 'JC-002',
+          Descripcion: 'Dell Latitude 5410 Intel i5-10310U 8GB 256GB SSD 14"',
+          Estado: 'Teclado desgastado, bateria 73%, sin cargador'
+        },
+        {
+          Referencia: 'JC-003',
+          Descripcion: 'HP ProDesk 600 G6 SFF i7-10700 16GB 512GB NVMe',
+          Estado: 'Carcasa con golpes visibles, falta RAM adicional, puertos dañados'
+        },
+        {
+          Referencia: 'JC-004',
+          Descripcion: 'Lenovo ThinkPad T490 i5-8265U 8GB sin SSD 14 FHD',
+          Estado: 'Pantalla rayada, sin SSD, batería 65%, touchpad falla'
+        }
+      ];
+      state.rawRows = demo;
+      state.results = analyzeRows(demo);
+      renderSummary(state.results);
+      renderTable(state.results);
+    });
+  </script>
+</body>
+</html>
