@@ -518,7 +518,7 @@ Debes devolver para cada línea: referencia, producto, modelo identificado, conf
       tbody.innerHTML = results.map(r => `
         <tr>
           <td>${r.linea}</td>
-          <td>${r.referencia}</td>
+          <td>${escapeHtml(r.referencia)}</td>
           <td>${escapeHtml(r.descripcion)}</td>
           <td>${escapeHtml(r.modelo)}</td>
           <td>${escapeHtml(r.configuracion)}</td>
@@ -547,7 +547,12 @@ Debes devolver para cada línea: referencia, producto, modelo identificado, conf
       if (!results.length) return alert('Primero analiza un Excel.');
       const headers = Object.keys(results[0]);
       const lines = [headers.join(';')].concat(
-        results.map(r => headers.map(h => `"${String(r[h]).replace(/"/g, '""')}"`).join(';'))
+        results.map(r => headers.map(h => {
+          const raw = String(r[h] ?? '');
+          // Evita que Excel interprete valores no confiables como fórmulas.
+          const safe = /^[\s\u0000-\u001f]*[=+@\-]/.test(raw) ? "'" + raw : raw;
+          return `"${safe.replace(/"/g, '""')}"`;
+        }).join(';'))
       );
       const blob = new Blob(["\ufeff" + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
@@ -559,6 +564,10 @@ Debes devolver para cada línea: referencia, producto, modelo identificado, conf
     }
 
     function loadWorkbook(file) {
+      if (file.size > 10 * 1024 * 1024) {
+        alert('El archivo supera el límite de seguridad de 10 MB.');
+        return;
+      }
       const reader = new FileReader();
       reader.onload = (e) => {
         const data = new Uint8Array(e.target.result);
@@ -570,6 +579,7 @@ Debes devolver para cada línea: referencia, producto, modelo identificado, conf
         renderSummary(state.results);
         renderTable(state.results);
       };
+      reader.onerror = () => alert('No se ha podido leer el archivo seleccionado.');
       reader.readAsArrayBuffer(file);
     }
 
